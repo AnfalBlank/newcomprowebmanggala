@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Manggala Utama Logo -->
+  
+  <!-- Head / Circle -->
+  <circle cx="50" cy="22" r="11" fill="#20A4F3" />
+  
+  <!-- Main M / Shield Body -->
+  <path d="
+    M 15 38 
+    L 34 26 
+    L 50 42 
+    L 66 26 
+    L 85 38 
+    V 56 
+    H 73 
+    V 70 
+    L 50 85 
+    L 27 70 
+    V 56 
+    H 15 
+    Z
+  " fill="#20A4F3" />
+  
+  <!-- Vertical Gaps extending downward, forming a robust M structure -->
+  <path d="M 40 38 L 40 76" stroke="white" stroke-width="4" stroke-linecap="round" />
+  <path d="M 60 38 L 60 76" stroke="white" stroke-width="4" stroke-linecap="round" />
+</svg>
