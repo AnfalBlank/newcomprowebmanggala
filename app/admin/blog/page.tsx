@@ -240,7 +240,7 @@ export default function BlogManagement() {
       </div>
 
       {/* Table/List */}
-      <div className="rounded-[2rem] border border-white/5 bg-card/30 backdrop-blur-xl overflow-hidden">
+      <div className="rounded-[2rem] border border-white/5 bg-card/30 backdrop-blur-xl overflow-x-auto w-full">
         {loading ? (
           <div className="p-12 flex justify-center text-muted-foreground">
             <Loader2 className="w-8 h-8 animate-spin" />
@@ -250,14 +250,14 @@ export default function BlogManagement() {
             No articles found. Create one.
           </div>
         ) : (
-          <table className="w-full text-left">
+          <table className="w-full text-left min-w-[900px]">
             <thead>
-              <tr className="border-b border-white/5 bg-white/5">
+              <tr className="border-b border-white/5 bg-white/5 whitespace-nowrap">
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">Article</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">Category</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">Status</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">Date</th>
-                <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-widest text-muted-foreground">Actions</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-muted-foreground w-32">Category</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-muted-foreground w-32">Status</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-muted-foreground w-32">Date</th>
+                <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-widest text-muted-foreground w-24">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">

@@ -100,6 +100,7 @@ function LogoItem({
         src={partner.logo}
         alt={partner.name}
         fill
+        unoptimized
         className="object-contain transition-all duration-300 group-hover:brightness-110 group-hover:drop-shadow-[0_0_12px_rgba(255,255,255,0.4)]"
         sizes={frameless ? "224px" : "(max-width: 768px) 176px, 224px"}
       />

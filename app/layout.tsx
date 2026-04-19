@@ -70,6 +70,11 @@ export const metadata: Metadata = {
     description: "Engineering & IT Solutions Berstandar Enterprise.",
     images: ["/logo.png"],
   },
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
   robots: {
     index: true,
     follow: true,

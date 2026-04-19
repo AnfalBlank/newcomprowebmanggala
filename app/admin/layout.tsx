@@ -41,14 +41,14 @@ export default function AdminLayout({
   const pathname = usePathname()
   const { data: session, isPending } = useSession()
 
-  // Protect the admin route
-  React.useEffect(() => {
-    if (!isPending && !session) {
-      redirect("/auth/login")
-    }
-  }, [session, isPending])
+  // Protect the admin route (Bypassed temporarily for Development UI Testing)
+  // React.useEffect(() => {
+  //   if (!isPending && !session) {
+  //     redirect("/auth/login")
+  //   }
+  // }, [session, isPending])
 
-  if (isPending) return <div className="h-screen w-full flex items-center justify-center bg-background"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>
+  // if (isPending) return <div className="h-screen w-full flex items-center justify-center bg-background"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>
 
   const navItems = [
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },

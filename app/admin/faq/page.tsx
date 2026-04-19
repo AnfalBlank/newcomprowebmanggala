@@ -198,7 +198,7 @@ export default function FAQManagement() {
       </div>
 
       {/* Table/List */}
-      <div className="rounded-[2rem] border border-white/5 bg-card/30 backdrop-blur-xl overflow-hidden">
+      <div className="rounded-[2rem] border border-white/5 bg-card/30 backdrop-blur-xl overflow-x-auto w-full">
         {loading ? (
           <div className="p-12 flex justify-center text-muted-foreground">
             <Loader2 className="w-8 h-8 animate-spin" />
@@ -208,16 +208,16 @@ export default function FAQManagement() {
             No FAQs found. Add one above.
           </div>
         ) : (
-          <table className="w-full text-left">
-            <thead>
-              <tr className="border-b border-white/5 bg-white/5">
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">Question</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">Category</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">Order</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">Status</th>
-                <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-widest text-muted-foreground">Actions</th>
-              </tr>
-            </thead>
+            <table className="w-full text-left min-w-[800px]">
+              <thead>
+                <tr className="border-b border-white/5 bg-white/5 whitespace-nowrap">
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">Question</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-muted-foreground w-28">Category</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-muted-foreground w-20">Order</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-muted-foreground w-32">Status</th>
+                  <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-widest text-muted-foreground w-24">Actions</th>
+                </tr>
+              </thead>
             <tbody className="divide-y divide-white/5">
               {faqs.map((faq: any) => (
                 <tr key={faq.id} className="hover:bg-white/[0.02] transition-colors group">
