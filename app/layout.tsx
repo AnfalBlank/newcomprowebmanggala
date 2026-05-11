@@ -38,7 +38,7 @@ export const viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://manggalautama.com'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://www.manggala-utama.id'),
   title: {
     default: "PT. Manggala Utama Indonesia | System Integrator & Engineering",
     template: "%s | PT. Manggala Utama Indonesia"
@@ -86,6 +86,12 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+  alternates: {
+    canonical: '/',
+  },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || '',
+  },
 };
 
 export default function RootLayout({
@@ -93,8 +99,34 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'PT. Manggala Utama Indonesia',
+    url: process.env.NEXT_PUBLIC_APP_URL || 'https://www.manggala-utama.id',
+    logo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.manggala-utama.id'}/logo.png`,
+    description: 'Perusahaan engineering dan system integrator terpercaya untuk solusi fueling (SPBU, Depo), otomatisasi industri, infrastruktur IT enterprise, dan software development.',
+    foundingDate: '2014',
+    areaServed: 'ID',
+    contactPoint: {
+      '@type': 'ContactPoint',
+      telephone: '+62-878-8428-1703',
+      contactType: 'customer service',
+      availableLanguage: ['Indonesian'],
+    },
+    sameAs: [
+      'https://www.manggala-utama.id',
+    ],
+  }
+
   return (
     <html lang="id" className={`${sora.variable} ${inter.variable} ${jetbrainsMono.variable}`}>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body className="font-sans antialiased min-h-screen flex flex-col bg-background text-foreground">
         <LanguageProvider>
           <ScrollProgressBar />
