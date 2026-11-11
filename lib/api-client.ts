@@ -23,9 +23,3 @@ export async function fetchInquiries() {
   if (!response.ok) throw new Error('Failed to fetch inquiries');
   return response.json();
 }
-
-export async function seedContent() {
-  const response = await fetch('/api/seed', { method: 'GET' });
-  if (!response.ok) throw new Error('Failed to seed content');
-  return response.json();
-}

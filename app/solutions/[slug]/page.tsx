@@ -1,6 +1,5 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { solutions } from "@/lib/data/solutions";
 import { FAQSection } from "@/components/faq-section";
 import { 
   Fuel, 
@@ -356,7 +355,7 @@ export default async function SolutionDetailPage({ params }: { params: Promise<{
       </section>
       {/* Dynamic Solution FAQ */}
       <FAQSection
-        category={solution.id === 'fueling' ? 'products' : 'solutions'}
+        category={slug === 'fueling' ? 'products' : 'solutions'}
         title={`Pertanyaan Seputar ${solution.title}`}
         subtitle="Rincian mengenai integrasi, estimasi biaya, dan spesifikasi pendukung"
         limit={3}

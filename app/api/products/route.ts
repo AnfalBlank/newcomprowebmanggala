@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/server/db";
 import { products } from "@/server/db/schema";
-import { desc, eq } from "drizzle-orm";
-import { auth } from "@/lib/auth";
+import { desc } from "drizzle-orm";
 import { nanoid } from "nanoid";
+import { requireAdmin } from "@/lib/admin-guard";
+import { bad, readProductBody } from "@/lib/content-validate";
 
-export async function GET(request: NextRequest) {
+export const dynamic = "force-dynamic";
+
+export async function GET() {
   try {
     const allProducts = await db.select().from(products).orderBy(desc(products.createdAt));
     return NextResponse.json(allProducts);
@@ -15,31 +18,22 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const guard = await requireAdmin(request);
+  if (!guard.ok) return guard.response;
+
   try {
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    });
+    const body = await request.json().catch(() => null);
+    const parsed = readProductBody(body);
+    if ("error" in parsed) return bad(parsed.error as string);
 
-    if (!session?.user || session.user.role !== "admin") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const body = await request.json();
-    const { name, category, description, features, imageUrl, area } = body;
-
-    const [newProduct] = await db.insert(products).values({
-      id: nanoid(),
-      name,
-      category,
-      description,
-      features,
-      imageUrl,
-      area,
-    }).returning();
+    const [newProduct] = await db
+      .insert(products)
+      .values({ id: nanoid(), ...parsed.data, createdAt: new Date(), updatedAt: new Date() })
+      .returning();
 
     return NextResponse.json(newProduct, { status: 201 });
   } catch (error) {
     console.error("Failed to create product", error);
-    return NextResponse.json({ error: "Failed to create product" }, { status: 500 });
+    return NextResponse.json({ error: "Gagal menyimpan produk" }, { status: 500 });
   }
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/server/db";
 import { articles } from "@/server/db/schema";
-import { desc, eq, sql, or, like } from "drizzle-orm";
+import { and, desc, eq, sql, or, like, type SQL } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { nanoid } from "nanoid";
 
@@ -17,68 +17,42 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "10");
     const offset = (page - 1) * limit;
 
-    let query = db.select().from(articles);
+    // Draft (belum terbit) cuma boleh dilihat admin. Pengunjung selalu dapat artikel aktif saja.
+    const session = await auth.api.getSession({ headers: request.headers }).catch(() => null);
+    const isAdmin = session?.user?.role === "admin";
 
-    // Only show active articles on public pages
-    if (active === "true") {
-      query = query.where(eq(articles.active, true));
+    const conditions: SQL[] = [];
+    if (active === "true" || !isAdmin) {
+      conditions.push(eq(articles.active, true));
     }
-
-    // Filter by category
     if (category && category !== "all") {
-      query = query.where(eq(articles.category, category));
+      conditions.push(eq(articles.category, category));
     }
-
-    // Filter featured articles
     if (featured === "true") {
-      query = query.where(eq(articles.featured, true));
+      conditions.push(eq(articles.featured, true));
     }
-
-    // Search in title and excerpt
     if (search) {
-      query = query.where(
+      conditions.push(
         or(
           like(articles.title, `%${search}%`),
           like(articles.excerpt, `%${search}%`)
-        )
+        )!
       );
     }
-
-    // Filter by tag (requires JSON parsing)
     if (tag) {
-      query = query.where(sql`${articles.tags} LIKE ${`%"${tag}"%`}`);
+      conditions.push(sql`${articles.tags} LIKE ${`%"${tag}"%`}`);
     }
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
 
-    // Fetch articles with pagination
-    const allArticles = await query
+    const allArticles = await db
+      .select()
+      .from(articles)
+      .where(where)
       .orderBy(desc(articles.publishedDate), desc(articles.createdAt))
       .limit(limit)
       .offset(offset);
 
-    // Get total count for pagination
-    const countQuery = db.select({ count: sql<number>`count(*)` }).from(articles);
-
-    // Apply same filters to count query
-    if (active === "true") {
-      countQuery.where(eq(articles.active, true));
-    }
-    if (category && category !== "all") {
-      countQuery.where(eq(articles.category, category));
-    }
-    if (featured === "true") {
-      countQuery.where(eq(articles.featured, true));
-    }
-    if (search) {
-      countQuery.where(
-        or(
-          like(articles.title, `%${search}%`),
-          like(articles.excerpt, `%${search}%`)
-        )
-      );
-    }
-    if (tag) {
-      countQuery.where(sql`${articles.tags} LIKE ${`%"${tag}"%`}`);
-    }
+    const countQuery = db.select({ count: sql<number>`count(*)` }).from(articles).where(where);
 
     const totalCountResult = await countQuery;
     const totalCount = totalCountResult[0]?.count || 0;
@@ -100,13 +74,13 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // const session = await auth.api.getSession({
-    //   headers: request.headers,
-    // });
+    const session = await auth.api.getSession({
+      headers: request.headers,
+    });
 
-    // if (!session?.user || session.user.role !== "admin") {
-    //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    // }
+    if (!session?.user || session.user.role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const body = await request.json();
     const {

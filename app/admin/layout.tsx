@@ -13,7 +13,10 @@ import {
   Menu,
   LogOut,
   Globe,
-  HelpCircle
+  HelpCircle,
+  Package,
+  Briefcase,
+  Building2
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -31,7 +34,7 @@ import {
   SidebarRail
 } from "@/components/ui/sidebar"
 import { useSession, signOut } from "@/lib/auth-client"
-import { redirect } from "next/navigation"
+import { useRouter } from "next/navigation"
 
 export default function AdminLayout({
   children,
@@ -41,19 +44,31 @@ export default function AdminLayout({
   const pathname = usePathname()
   const { data: session, isPending } = useSession()
 
-  // Protect the admin route (Bypassed temporarily for Development UI Testing)
-  // React.useEffect(() => {
-  //   if (!isPending && !session) {
-  //     redirect("/auth/login")
-  //   }
-  // }, [session, isPending])
+  const router = useRouter()
+  const isAdmin = (session?.user as any)?.role === "admin"
 
-  // if (isPending) return <div className="h-screen w-full flex items-center justify-center bg-background"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>
+  // Halaman admin hanya untuk akun admin. API tetap memeriksa sendiri di server.
+  React.useEffect(() => {
+    if (!isPending && !isAdmin) {
+      router.replace("/auth")
+    }
+  }, [isAdmin, isPending, router])
+
+  if (isPending || !isAdmin) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    )
+  }
 
   const navItems = [
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
     { name: "Blog Posts", href: "/admin/blog", icon: FileText },
     { name: "FAQ", href: "/admin/faq", icon: HelpCircle },
+    { name: "Produk", href: "/admin/produk", icon: Package },
+    { name: "Portofolio", href: "/admin/portofolio", icon: Briefcase },
+    { name: "Klien", href: "/admin/klien", icon: Building2 },
     { name: "Solutions", href: "/admin/solutions", icon: ImageIcon },
     { name: "Inquiries", href: "/admin/inquiries", icon: MessageSquare },
     { name: "Settings", href: "/admin/settings", icon: Settings },
@@ -96,7 +111,7 @@ export default function AdminLayout({
             <Button 
               variant="ghost" 
               className="w-full justify-start gap-3 h-11 rounded-xl text-destructive hover:bg-destructive/10"
-              onClick={() => signOut()}
+              onClick={async () => { await signOut(); router.replace("/auth") }}
             >
               <LogOut className="h-5 w-5" />
               <span className="group-data-[collapsible=icon]:hidden">Sign Out</span>

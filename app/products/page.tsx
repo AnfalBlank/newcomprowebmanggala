@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { fetchProducts } from "@/lib/api-client";
+import { needsUnoptimized } from "@/lib/image";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -146,6 +147,8 @@ export default function ProductsPage() {
                       src={product.imageUrl}
                       alt={product.name}
                       fill
+                      unoptimized={needsUnoptimized(product.imageUrl)}
+                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                       className="object-cover hover:scale-105 transition-transform duration-500"
                     />
                   ) : (

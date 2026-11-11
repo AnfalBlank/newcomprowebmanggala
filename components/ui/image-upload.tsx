@@ -2,241 +2,185 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { useUploadFiles } from "@better-upload/client";
 import { cn } from "@/lib/utils";
+import { needsUnoptimized } from "@/lib/image";
 import { Button } from "@/components/ui/button";
-import { Upload, X, Image as ImageIcon, Loader2, FileText } from "lucide-react";
+import { Upload, X, Image as ImageIcon, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface ImageUploadProps {
   value?: string | string[];
   onChange: (value: string | string[]) => void;
-  route?: string;
   multiple?: boolean;
   maxFiles?: number;
   className?: string;
   disabled?: boolean;
+  /** "contain" untuk logo, "cover" untuk foto. */
+  fit?: "cover" | "contain";
+  label?: string;
 }
 
+const MAX_BYTES = 5 * 1024 * 1024;
+const ACCEPT = "image/jpeg,image/png,image/webp";
+const toolBtn = "size-7 rounded-full bg-black/75 text-white shadow hover:bg-black hover:text-white disabled:opacity-30";
+
+/** Upload foto ke /api/upload (khusus admin). Hasilnya alamat /media/... */
 export function ImageUpload({
   value,
   onChange,
-  route = "images",
   multiple = false,
   maxFiles = 4,
   className,
   disabled = false,
+  fit = "cover",
+  label,
 }: ImageUploadProps) {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = React.useState(false);
+  const [isPending, setIsPending] = React.useState(false);
+  const [error, setError] = React.useState("");
 
-  // Normalize value to array
   const images = React.useMemo(() => {
     if (!value) return [];
     if (Array.isArray(value)) return value;
     return [value];
   }, [value]);
 
-  const { upload, isPending, progresses } = useUploadFiles({
-    route,
-    onUploadComplete: (data) => {
-      // Extract URLs from the response
-      const urls: string[] = [];
-      if (data.files && Array.isArray(data.files)) {
-        for (const file of data.files) {
-          const key = file.objectInfo?.key;
-          if (key) {
-            const publicUrl = `${process.env.NEXT_PUBLIC_R2_PUBLIC_URL || ""}/${key}`;
-            urls.push(publicUrl);
-          }
-        }
-      }
-
-      if (urls.length > 0) {
-        if (multiple) {
-          onChange([...images, ...urls]);
-        } else {
-          onChange(urls[0] as string);
-        }
-      }
-    },
-  });
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      const filesToUpload = multiple
-        ? Array.from(files).slice(0, maxFiles - images.length)
-        : [files[0]!];
-      upload(filesToUpload);
+  const upload = async (files: File[]) => {
+    setError("");
+    const valid = files.filter((f) => ACCEPT.split(",").includes(f.type) && f.size <= MAX_BYTES);
+    if (valid.length < files.length) {
+      setError("Sebagian file dilewati: hanya JPG, PNG, atau WEBP, maksimal 5 MB per foto.");
     }
-    // Reset input
-    if (inputRef.current) {
-      inputRef.current.value = "";
+    if (valid.length === 0) return;
+
+    const form = new FormData();
+    valid.forEach((f) => form.append("files", f));
+    setIsPending(true);
+    try {
+      const res = await fetch("/api/upload", { method: "POST", body: form });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "Upload gagal");
+      const urls: string[] = data.urls || [];
+      if (multiple) onChange([...images, ...urls]);
+      else if (urls[0]) onChange(urls[0]);
+    } catch (e: any) {
+      setError(e?.message || "Upload gagal");
+    } finally {
+      setIsPending(false);
     }
   };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-
-    if (disabled || isPending) return;
-
-    const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      const filesToUpload = multiple
-        ? Array.from(files).slice(0, maxFiles - images.length)
-        : [files[0]!];
-      upload(filesToUpload);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    if (!disabled && !isPending) {
-      setIsDragging(true);
-    }
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
+  const pickFiles = (list: FileList | null) => {
+    if (!list || list.length === 0) return;
+    const files = multiple ? Array.from(list).slice(0, Math.max(0, maxFiles - images.length)) : [list[0]!];
+    void upload(files);
   };
 
   const removeImage = (index: number) => {
-    if (multiple) {
-      const newImages = images.filter((_, i) => i !== index);
-      onChange(newImages);
-    } else {
-      onChange("");
-    }
+    if (multiple) onChange(images.filter((_, i) => i !== index));
+    else onChange("");
+  };
+
+  const move = (index: number, dir: -1 | 1) => {
+    const next = [...images];
+    const target = index + dir;
+    if (target < 0 || target >= next.length) return;
+    [next[index], next[target]] = [next[target]!, next[index]!];
+    onChange(next);
   };
 
   const canAddMore = multiple ? images.length < maxFiles : images.length === 0;
 
-  // Calculate overall progress from file upload info objects
-  const progressValues = Object.values(progresses);
-  const overallProgress =
-    progressValues.length > 0
-      ? progressValues.reduce((acc, file) => acc + (file.progress || 0), 0) /
-        progressValues.length
-      : 0;
-
-  const isImage = (url: string) => {
-    return /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(url) || url.startsWith('data:image');
-  };
-
-  const isPDF = (url: string) => {
-    return /\.pdf$/i.test(url);
-  };
-
   return (
-    <div className={cn("space-y-4", className)}>
-      {/* File previews */}
+    <div className={cn("space-y-3", className)}>
       {images.length > 0 && (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+        <div className={cn("grid gap-3", multiple ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4" : "grid-cols-1 max-w-xs")}>
           {images.map((url, index) => (
             <div
               key={`${url}-${index}`}
-              className="group bg-muted relative aspect-square overflow-hidden rounded-lg border flex items-center justify-center"
-            >
-              {isImage(url) ? (
-                <Image
-                  src={url}
-                  alt={`Upload ${index + 1}`}
-                  fill
-                  className="object-cover"
-                />
-              ) : isPDF(url) ? (
-                <div className="flex flex-col items-center gap-2 p-4 text-center">
-                   <div className="bg-red-50 p-3 rounded-full">
-                     <FileText className="h-10 w-10 text-red-600" />
-                   </div>
-                   <span className="text-[10px] font-bold text-red-700 uppercase tracking-widest">PDF Document</span>
-                   <span className="text-[8px] truncate max-w-full px-2 text-muted-foreground">
-                     {url.split('/').pop()?.split('-').slice(1).join('-') || "document.pdf"}
-                   </span>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center gap-2 p-4">
-                   <FileText className="h-10 w-10 text-muted-foreground" />
-                   <span className="text-[10px] truncate max-w-full px-2">
-                     {url.split('/').pop()?.slice(-20)}
-                   </span>
-                </div>
+              className={cn(
+                "group relative aspect-video overflow-hidden rounded-xl border border-white/10",
+                fit === "contain" ? "bg-white/90" : "bg-white/5"
               )}
-              <Button
-                type="button"
-                variant="destructive"
-                size="icon"
-                className="absolute top-2 right-2 size-6 opacity-0 transition-opacity group-hover:opacity-100"
-                onClick={() => removeImage(index)}
-                disabled={disabled || isPending}
-              >
-                <X className="size-3" />
-              </Button>
+            >
+              <Image
+                src={url}
+                alt={`Foto ${index + 1}`}
+                fill
+                unoptimized={needsUnoptimized(url)}
+                sizes="240px"
+                className={fit === "contain" ? "object-contain p-3" : "object-cover"}
+              />
+              <div className="absolute inset-x-0 top-0 flex justify-end gap-1 p-1.5">
+                {multiple && (
+                  <>
+                    <Button type="button" variant="ghost" size="icon" className={toolBtn} aria-label="Geser ke kiri"
+                      onClick={() => move(index, -1)} disabled={disabled || isPending || index === 0}>
+                      <ChevronLeft className="size-4" />
+                    </Button>
+                    <Button type="button" variant="ghost" size="icon" className={toolBtn} aria-label="Geser ke kanan"
+                      onClick={() => move(index, 1)} disabled={disabled || isPending || index === images.length - 1}>
+                      <ChevronRight className="size-4" />
+                    </Button>
+                  </>
+                )}
+                <Button type="button" variant="ghost" size="icon" className={`${toolBtn} hover:!bg-red-600`} aria-label="Hapus foto"
+                  onClick={() => removeImage(index)} disabled={disabled || isPending}>
+                  <X className="size-4" />
+                </Button>
+              </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Upload area */}
       {canAddMore && (
         <div
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
+          onDrop={(e) => {
+            e.preventDefault();
+            setIsDragging(false);
+            if (!disabled && !isPending) pickFiles(e.dataTransfer.files);
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            if (!disabled && !isPending) setIsDragging(true);
+          }}
+          onDragLeave={(e) => {
+            e.preventDefault();
+            setIsDragging(false);
+          }}
           className={cn(
-            "relative rounded-lg border-2 border-dashed transition-colors",
-            isDragging
-              ? "border-primary bg-primary/5"
-              : "border-muted-foreground/25 hover:border-muted-foreground/50",
+            "relative rounded-xl border-2 border-dashed transition-colors",
+            isDragging ? "border-primary bg-primary/5" : "border-white/15 hover:border-white/30",
             disabled && "cursor-not-allowed opacity-50"
           )}
         >
-          <label
-            className={cn(
-              "flex cursor-pointer flex-col items-center justify-center p-8",
-              (disabled || isPending) && "cursor-not-allowed"
-            )}
-          >
+          <label className={cn("flex cursor-pointer flex-col items-center justify-center p-6 text-center", (disabled || isPending) && "cursor-not-allowed")}>
             <input
               ref={inputRef}
               type="file"
-              accept={route === 'documents' ? "application/pdf,image/*" : "image/*"}
+              accept={ACCEPT}
               multiple={multiple}
-              onChange={handleFileChange}
+              onChange={(e) => {
+                pickFiles(e.target.files);
+                if (inputRef.current) inputRef.current.value = "";
+              }}
               disabled={disabled || isPending}
               className="sr-only"
             />
-
             {isPending ? (
               <>
-                <Loader2 className="text-muted-foreground mb-3 size-10 animate-spin" />
-                <p className="text-sm font-medium">Uploading...</p>
-                <p className="text-muted-foreground mt-1 text-xs">
-                  {Math.round(overallProgress * 100)}% complete
-                </p>
+                <Loader2 className="text-muted-foreground mb-2 size-8 animate-spin" />
+                <p className="text-sm font-medium">Mengupload…</p>
               </>
             ) : (
               <>
-                <div className="bg-muted mb-3 flex size-12 items-center justify-center rounded-full">
-                  {isDragging ? (
-                    <ImageIcon className="text-primary size-6" />
-                  ) : (
-                    <Upload className="text-muted-foreground size-6" />
-                  )}
+                <div className="bg-white/5 mb-2 flex size-11 items-center justify-center rounded-full">
+                  {isDragging ? <ImageIcon className="text-primary size-5" /> : <Upload className="text-muted-foreground size-5" />}
                 </div>
-                <p className="text-sm font-medium">
-                  {isDragging
-                    ? "Drop files here"
-                    : "Click or drag files to upload"}
-                </p>
+                <p className="text-sm font-medium">{label || (multiple ? "Pilih atau tarik foto ke sini" : "Pilih atau tarik foto ke sini")}</p>
                 <p className="text-muted-foreground mt-1 text-xs">
-                  {route === 'documents' 
-                    ? `PDF, PNG, JPG up to 10MB` 
-                    : multiple 
-                      ? `Up to ${maxFiles} images • PNG, JPG, WebP`
-                      : "PNG, JPG, WebP"}
+                  JPG, PNG, WEBP · maks 5 MB{multiple ? ` · sisa ${maxFiles - images.length} foto` : ""}
                 </p>
               </>
             )}
@@ -244,15 +188,7 @@ export function ImageUpload({
         </div>
       )}
 
-      {/* Progress bar */}
-      {isPending && overallProgress > 0 && (
-        <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
-          <div
-            className="bg-primary h-full transition-all duration-300"
-            style={{ width: `${overallProgress * 100}%` }}
-          />
-        </div>
-      )}
+      {error && <p className="text-sm text-destructive">{error}</p>}
     </div>
   );
 }

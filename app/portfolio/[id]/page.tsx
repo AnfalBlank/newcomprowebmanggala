@@ -18,12 +18,16 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslation } from "@/context/LanguageContext";
+import { needsUnoptimized, parseGallery } from "@/lib/image";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { ChevronRight, X } from "lucide-react";
 
 export default function ProjectDetailPage() {
   const { id } = useParams();
   const router = useRouter();
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [viewIndex, setViewIndex] = useState<number | null>(null);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -43,14 +47,7 @@ export default function ProjectDetailPage() {
     if (id) loadProject();
   }, [id, router]);
 
-  let gallery = [];
-  try {
-    if (project?.gallery) {
-      gallery = typeof project.gallery === 'string' ? JSON.parse(project.gallery) : project.gallery;
-    }
-  } catch (e) {
-    console.error("Failed to parse gallery", e);
-  }
+  const gallery = parseGallery(project?.gallery);
 
   if (loading) {
     return (
@@ -81,6 +78,8 @@ export default function ProjectDetailPage() {
             src={project.imageUrl} 
             alt={project.title} 
             fill 
+            unoptimized={needsUnoptimized(project.imageUrl)}
+            sizes="100vw"
             className="object-cover"
             priority
           />
@@ -145,17 +144,25 @@ export default function ProjectDetailPage() {
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {gallery.map((url: string, index: number) => (
-                        <div key={index} className="group relative aspect-video rounded-2xl overflow-hidden shadow-lg hover:shadow-primary/20 transition-all duration-300">
+                        <button
+                          type="button"
+                          key={index}
+                          onClick={() => setViewIndex(index)}
+                          aria-label={`Perbesar foto dokumentasi ${index + 1}`}
+                          className="group relative aspect-video rounded-2xl overflow-hidden shadow-lg hover:shadow-primary/20 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        >
                           <Image 
                             src={url} 
-                            alt={`${project.title} - Documentation ${index + 1}`} 
+                            alt={`${project.title} - Dokumentasi ${index + 1}`} 
                             fill 
+                            unoptimized={needsUnoptimized(url)}
+                            sizes="(max-width: 640px) 100vw, 50vw"
                             className="object-cover group-hover:scale-110 transition-transform duration-500"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
                             <span className="text-white text-xs font-medium">{t('portfolio.documentation')} #{index + 1}</span>
                           </div>
-                        </div>
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -228,6 +235,41 @@ export default function ProjectDetailPage() {
           </div>
         </div>
       </div>
+      <Dialog open={viewIndex !== null} onOpenChange={(open) => !open && setViewIndex(null)}>
+        <DialogContent showCloseButton={false} className="max-w-5xl sm:max-w-5xl w-[calc(100%-1.5rem)] p-0 gap-0 bg-black border-white/10 overflow-hidden">
+          <DialogTitle className="sr-only">Foto dokumentasi {project.title}</DialogTitle>
+          {viewIndex !== null && gallery[viewIndex] && (
+            <div className="relative">
+              <div className="relative w-full aspect-[4/3] md:aspect-video">
+                <Image
+                  src={gallery[viewIndex]}
+                  alt={`${project.title} - Dokumentasi ${viewIndex + 1}`}
+                  fill
+                  unoptimized={needsUnoptimized(gallery[viewIndex])}
+                  sizes="100vw"
+                  className="object-contain"
+                />
+              </div>
+              <div className="flex items-center justify-between gap-2 p-3 text-white">
+                <Button type="button" variant="ghost" size="icon" className="text-white hover:bg-white/10" aria-label="Foto sebelumnya"
+                  disabled={viewIndex === 0} onClick={() => setViewIndex((i) => (i === null ? i : Math.max(0, i - 1)))}>
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+                <span className="text-sm">{viewIndex + 1} / {gallery.length}</span>
+                <div className="flex gap-1">
+                  <Button type="button" variant="ghost" size="icon" className="text-white hover:bg-white/10" aria-label="Foto berikutnya"
+                    disabled={viewIndex === gallery.length - 1} onClick={() => setViewIndex((i) => (i === null ? i : Math.min(gallery.length - 1, i + 1)))}>
+                    <ChevronRight className="h-5 w-5" />
+                  </Button>
+                  <Button type="button" variant="ghost" size="icon" className="text-white hover:bg-white/10" aria-label="Tutup" onClick={() => setViewIndex(null)}>
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

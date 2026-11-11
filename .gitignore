@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# foto upload admin (disimpan di server, jangan di-commit)
+/uploads
+/.lokal

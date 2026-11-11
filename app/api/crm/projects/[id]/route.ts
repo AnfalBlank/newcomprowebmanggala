@@ -39,7 +39,7 @@ export async function PATCH(
       headers: request.headers,
     });
 
-    if (!session?.user) {
+    if (!session?.user || session.user.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

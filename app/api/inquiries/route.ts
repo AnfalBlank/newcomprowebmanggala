@@ -24,10 +24,20 @@ export async function GET(request: NextRequest) {
   }
 }
 
+const escapeHtml = (v: unknown) =>
+  String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { name, email, phone, company, subject, message } = body;
+
+    if (typeof name !== "string" || typeof email !== "string" || typeof message !== "string" || !name.trim() || !email.trim() || !message.trim()) {
+      return NextResponse.json({ error: "Nama, email, dan pesan wajib diisi" }, { status: 400 });
+    }
+    if (name.length > 200 || email.length > 200 || message.length > 5000 || String(subject ?? "").length > 300 || String(company ?? "").length > 200 || String(phone ?? "").length > 50) {
+      return NextResponse.json({ error: "Isian terlalu panjang" }, { status: 400 });
+    }
 
     const [newInquiry] = await db.insert(inquiries).values({
       id: nanoid(),
@@ -59,20 +69,21 @@ Manage this inquiry in your admin dashboard.`;
     void sendWhatsAppNotification(adminPhone, notificationMessage);
 
     // Send Email notification to admin (Async)
-    const adminEmail = process.env.ADMIN_EMAIL || email; // Fallback to submitter email for testing or env
-    void sendEmail({
+    // Jangan pernah kirim ke email pengisi form (bisa dipakai buat spam lewat server kita).
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (adminEmail) void sendEmail({
       to: adminEmail,
       subject: `[INQUIRY] ${subject || 'New Message from Website'}`,
       html: `
         <h2>Pesan Baru dari Website</h2>
-        <p><strong>Nama:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Telepon:</strong> ${phone || '-'}</p>
-        <p><strong>Perusahaan:</strong> ${company || '-'}</p>
-        <p><strong>Subjek:</strong> ${subject || '-'}</p>
+        <p><strong>Nama:</strong> ${escapeHtml(name)}</p>
+        <p><strong>Email:</strong> ${escapeHtml(email)}</p>
+        <p><strong>Telepon:</strong> ${escapeHtml(phone || '-')}</p>
+        <p><strong>Perusahaan:</strong> ${escapeHtml(company || '-')}</p>
+        <p><strong>Subjek:</strong> ${escapeHtml(subject || '-')}</p>
         <p><strong>Pesan:</strong></p>
         <div style="background: #f4f4f4; padding: 15px; border-radius: 5px;">
-          ${message.replace(/\n/g, '<br>')}
+          ${escapeHtml(message).replace(/\n/g, '<br>')}
         </div>
       `
     }).catch(e => console.error("Admin Email notification failed", e));

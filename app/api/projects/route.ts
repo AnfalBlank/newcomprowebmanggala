@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/server/db";
 import { projects } from "@/server/db/schema";
-import { desc, eq } from "drizzle-orm";
-import { auth } from "@/lib/auth";
+import { desc } from "drizzle-orm";
 import { nanoid } from "nanoid";
+import { requireAdmin } from "@/lib/admin-guard";
+import { bad, readProjectBody } from "@/lib/content-validate";
 
-export async function GET(request: NextRequest) {
+export const dynamic = "force-dynamic";
+
+export async function GET() {
   try {
     const allProjects = await db.select().from(projects).orderBy(desc(projects.createdAt));
     return NextResponse.json(allProjects);
@@ -15,33 +18,22 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const guard = await requireAdmin(request);
+  if (!guard.ok) return guard.response;
+
   try {
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    });
+    const body = await request.json().catch(() => null);
+    const parsed = readProjectBody(body);
+    if ("error" in parsed) return bad(parsed.error as string);
 
-    if (!session?.user || session.user.role !== "admin") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const body = await request.json();
-    const { title, category, description, client, year, imageUrl, gallery, scope } = body;
-
-    const [newProject] = await db.insert(projects).values({
-      id: nanoid(),
-      title,
-      category,
-      description,
-      client,
-      year,
-      imageUrl,
-      gallery,
-      scope,
-    }).returning();
+    const [newProject] = await db
+      .insert(projects)
+      .values({ id: nanoid(), ...parsed.data, createdAt: new Date(), updatedAt: new Date() })
+      .returning();
 
     return NextResponse.json(newProject, { status: 201 });
   } catch (error) {
     console.error("Failed to create project", error);
-    return NextResponse.json({ error: "Failed to create project" }, { status: 500 });
+    return NextResponse.json({ error: "Gagal menyimpan proyek" }, { status: 500 });
   }
 }

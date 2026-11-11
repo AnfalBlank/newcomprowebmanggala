@@ -13,8 +13,10 @@ import { FadeIn, SlideIn, StaggerContainer, StaggerItem } from "@/components/ani
 import { Trophy, Target, History, ChevronRight, Award, Shield, CheckCircle, Users, Briefcase, Lightbulb, Clock, Star, MapPin } from "lucide-react";
 import { FAQSection } from "@/components/faq-section";
 import { PartnerLogos } from "@/components/partner-logos";
+import { useClientLogos } from "@/hooks/use-client-logos";
 
 export default function AboutPage() {
+  const clientLogos = useClientLogos();
   const companyMilestones = [
     {
       year: "2014",
@@ -428,14 +430,7 @@ export default function AboutPage() {
 
       {/* Partner Logos Section */}
       <PartnerLogos
-        partners={[
-          { name: "PERTAMINA", logo: "/partners/pertamina-partner.png" },
-          { name: "PELINDO INDONESIA", logo: "/partners/pelindo-indonesia-partner.png" },
-          { name: "PLN Persero", logo: "/partners/pln-persero-partner.png" },
-          { name: "PT Prasaad Seeds Indonesia", logo: "/partners/pt-prasaad-seeds-indonesia-partner.png" },
-          { name: "PT Pura Barutama", logo: "/partners/purabarutama-partner.png" },
-          { name: "RSUP PERSAHABATAN", logo: "/partners/rsup-persahabatan-partner.png" },
-        ]}
+        partners={clientLogos}
         title="Perusahaan yang Percaya pada Kami"
         subtitle="Kami bangga bekerja sama dengan berbagai perusahaan ternama di Indonesia"
       />

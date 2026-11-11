@@ -23,9 +23,12 @@ export const auth = betterAuth({
   ].filter(Boolean),
 
   // Email and password authentication (no email verification required)
+  // Pendaftaran akun baru ditutup. Buka sementara dengan ALLOW_SIGNUP=true
+  // hanya saat mau membuat akun admin baru, lalu tutup lagi.
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false,
+    disableSignUp: process.env.ALLOW_SIGNUP !== "true",
   },
 
   // Admin plugin for role-based access control

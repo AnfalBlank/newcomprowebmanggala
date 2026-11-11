@@ -53,7 +53,8 @@ export default function AuthPage() {
       })
 
       if (error) {
-        setError(error.message || 'Gagal mendaftar. Silakan coba email lain.')
+        const closed = /not enabled|disabled/i.test(error.message || '') || error.status === 400 && /sign ?up/i.test(error.message || '')
+        setError(closed ? 'Pendaftaran akun baru sedang ditutup. Minta admin membuatkan akun.' : (error.message || 'Gagal mendaftar. Silakan coba email lain.'))
       } else {
         setSuccess('Akun berhasil dibuat! Silakan pindah ke tab "Sign In" untuk masuk.')
       }

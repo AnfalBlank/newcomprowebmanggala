@@ -2,46 +2,36 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/server/db";
 import { products } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
-import { auth } from "@/lib/auth";
+import { requireAdmin } from "@/lib/admin-guard";
+import { bad, readProductBody } from "@/lib/content-validate";
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const guard = await requireAdmin(request);
+  if (!guard.ok) return guard.response;
+
   try {
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    });
-
-    if (!session?.user || session.user.role !== "admin") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
-    const body = await request.json();
-    const { name, category, description, features, imageUrl, area } = body;
+    const body = await request.json().catch(() => null);
+    const parsed = readProductBody(body);
+    if ("error" in parsed) return bad(parsed.error as string);
 
     const [updatedProduct] = await db
       .update(products)
-      .set({
-        name,
-        category,
-        description,
-        features,
-        imageUrl,
-        area,
-        updatedAt: new Date(),
-      })
+      .set({ ...parsed.data, updatedAt: new Date() })
       .where(eq(products.id, id))
       .returning();
 
     if (!updatedProduct) {
-      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+      return NextResponse.json({ error: "Produk tidak ditemukan" }, { status: 404 });
     }
 
     return NextResponse.json(updatedProduct);
   } catch (error) {
-    return NextResponse.json({ error: "Failed to update product" }, { status: 500 });
+    console.error("Failed to update product", error);
+    return NextResponse.json({ error: "Gagal menyimpan produk" }, { status: 500 });
   }
 }
 
@@ -49,20 +39,17 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const guard = await requireAdmin(request);
+  if (!guard.ok) return guard.response;
+
   try {
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    });
-
-    if (!session?.user || session.user.role !== "admin") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
-    await db.delete(products).where(eq(products.id, id));
-
+    const [deleted] = await db.delete(products).where(eq(products.id, id)).returning();
+    if (!deleted) {
+      return NextResponse.json({ error: "Produk tidak ditemukan" }, { status: 404 });
+    }
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: "Failed to delete product" }, { status: 500 });
+    return NextResponse.json({ error: "Gagal menghapus produk" }, { status: 500 });
   }
 }

@@ -2,11 +2,29 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/server/db";
 import { products, projects, resources, faqs } from "@/server/db/schema";
 import { nanoid } from "nanoid";
+import { requireAdmin } from "@/lib/admin-guard";
 
-// Use GET for easy triggering via browser
-export async function GET(request: NextRequest) {
+const KONFIRMASI = "HAPUS-DAN-ISI-CONTOH";
+
+// Mengisi data contoh. Menghapus SEMUA produk, proyek, resource, dan FAQ dulu.
+// Hanya untuk development lokal: wajib NODE_ENV=development, ALLOW_SEED=true,
+// login admin, metode POST, dan body {"konfirmasi":"HAPUS-DAN-ISI-CONTOH"}.
+export async function POST(request: NextRequest) {
+  if (process.env.NODE_ENV !== "development" || process.env.ALLOW_SEED !== "true") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  const guard = await requireAdmin(request);
+  if (!guard.ok) return guard.response;
+
+  const body = await request.json().catch(() => ({}));
+  if (body?.konfirmasi !== KONFIRMASI) {
+    return NextResponse.json(
+      { error: `Kirim {"konfirmasi":"${KONFIRMASI}"} untuk lanjut. Semua produk, proyek, resource, dan FAQ akan dihapus.` },
+      { status: 400 }
+    );
+  }
+
   try {
-    // Purge old mocks to inject fresh requested data
     await db.delete(products);
     await db.delete(projects);
     await db.delete(resources);

@@ -138,6 +138,17 @@ export const articles = sqliteTable("articles", {
 });
 
 
+// Logo klien "Trusted by" di beranda & halaman About (dikelola dari Admin > Klien)
+export const clients = sqliteTable("clients", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  logoUrl: text("logo_url").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  active: integer("active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+});
+
 // CRM Module Tables
 
 export const crmLeads = sqliteTable("crm_leads", {

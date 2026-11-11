@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/server/db";
 import { projects } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
-import { auth } from "@/lib/auth";
+import { requireAdmin } from "@/lib/admin-guard";
+import { bad, readProjectBody } from "@/lib/content-validate";
 
 export async function GET(
   request: NextRequest,
@@ -28,42 +29,29 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const guard = await requireAdmin(request);
+  if (!guard.ok) return guard.response;
+
   try {
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    });
-
-    if (!session?.user || session.user.role !== "admin") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
-    const body = await request.json();
-    const { title, category, description, client, year, imageUrl, gallery, scope } = body;
+    const body = await request.json().catch(() => null);
+    const parsed = readProjectBody(body);
+    if ("error" in parsed) return bad(parsed.error as string);
 
     const [updatedProject] = await db
       .update(projects)
-      .set({
-        title,
-        category,
-        description,
-        client,
-        year,
-        imageUrl,
-        gallery,
-        scope,
-        updatedAt: new Date(),
-      })
+      .set({ ...parsed.data, updatedAt: new Date() })
       .where(eq(projects.id, id))
       .returning();
 
     if (!updatedProject) {
-      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+      return NextResponse.json({ error: "Proyek tidak ditemukan" }, { status: 404 });
     }
 
     return NextResponse.json(updatedProject);
   } catch (error) {
-    return NextResponse.json({ error: "Failed to update project" }, { status: 500 });
+    console.error("Failed to update project", error);
+    return NextResponse.json({ error: "Gagal menyimpan proyek" }, { status: 500 });
   }
 }
 
@@ -71,20 +59,17 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const guard = await requireAdmin(request);
+  if (!guard.ok) return guard.response;
+
   try {
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    });
-
-    if (!session?.user || session.user.role !== "admin") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
-    await db.delete(projects).where(eq(projects.id, id));
-
+    const [deleted] = await db.delete(projects).where(eq(projects.id, id)).returning();
+    if (!deleted) {
+      return NextResponse.json({ error: "Proyek tidak ditemukan" }, { status: 404 });
+    }
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: "Failed to delete project" }, { status: 500 });
+    return NextResponse.json({ error: "Gagal menghapus proyek" }, { status: 500 });
   }
 }

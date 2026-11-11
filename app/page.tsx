@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { BackgroundGlow } from "@/components/ui/background-glow";
 import { BentoGrid, BentoGridItem } from "@/components/ui/bento-grid";
 import { InfinitePartnerLogos } from "@/components/partner-logos";
+import { useClientLogos } from "@/hooks/use-client-logos";
 import { TechHero } from "@/components/ui/tech-hero";
 import { FAQSection } from "@/components/faq-section";
 import { useTranslation } from "@/context/LanguageContext";
@@ -30,6 +31,7 @@ import {
 } from "lucide-react";
 
 export default function Home() {
+  const clientLogos = useClientLogos();
   const { t } = useTranslation();
 
   const services = [
@@ -296,14 +298,7 @@ export default function Home() {
           <p className="text-[10px] font-black uppercase tracking-[0.5em] text-muted-foreground">Trusted by Industry Leaders</p>
         </div>
         <InfinitePartnerLogos
-          partners={[
-            { name: "PERTAMINA", logo: "/partners/pertamina-partner.png" },
-            { name: "PELINDO INDONESIA", logo: "/partners/pelindo-indonesia-partner.png" },
-            { name: "PLN Persero", logo: "/partners/pln-persero-partner.png" },
-            { name: "PT Prasaad Seeds Indonesia", logo: "/partners/pt-prasaad-seeds-indonesia-partner.png" },
-            { name: "PT Pura Barutama", logo: "/partners/purabarutama-partner.png" },
-            { name: "RSUP PERSAHABATAN", logo: "/partners/rsup-persahabatan-partner.png" },
-          ]}
+          partners={clientLogos}
         />
       </section>
 

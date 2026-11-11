@@ -3,9 +3,17 @@ import { db } from '@/server/db';
 import { crmReminders, crmLeads } from '@/server/db/schema';
 import { eq, lte, and } from 'drizzle-orm';
 import { sendWhatsAppMessage } from '@/lib/whatsapp';
+import { requireAdmin } from '@/lib/admin-guard';
 
 export async function GET(request: NextRequest) {
-  // Simple check for due reminders
+  // Boleh dipanggil cron dengan header x-cron-secret = CRON_SECRET, atau oleh admin yang login.
+  const cronSecret = process.env.CRON_SECRET;
+  const fromCron = !!cronSecret && request.headers.get('x-cron-secret') === cronSecret;
+  if (!fromCron) {
+    const guard = await requireAdmin(request);
+    if (!guard.ok) return guard.response;
+  }
+
   const now = new Date();
   
   try {

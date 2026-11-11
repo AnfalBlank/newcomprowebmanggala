@@ -47,7 +47,7 @@ export function initSmoothScroll() {
 
   // Smooth scroll untuk anchor links
   document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
-    anchor.addEventListener('click', function (e) {
+    anchor.addEventListener('click', function (this: Element, e) {
       const href = this.getAttribute('href');
       if (!href || href === '#') return;
 
@@ -67,7 +67,7 @@ export function initParallax() {
   if (typeof window === 'undefined') return;
 
   // Parallax effect untuk background images
-  const parallaxElements = document.querySelectorAll('.parallax');
+  const parallaxElements = document.querySelectorAll<HTMLElement>('.parallax');
 
   function handleScroll() {
     const scrolled = window.pageYOffset;
@@ -89,13 +89,13 @@ export function initHoverEffects() {
   if (typeof window === 'undefined') return;
 
   // Magnetic button effect
-  const buttons = document.querySelectorAll('.magnetic-btn');
+  const buttons = document.querySelectorAll<HTMLElement>('.magnetic-btn');
 
   buttons.forEach((btn) => {
     btn.addEventListener('mousemove', (e) => {
       const rect = btn.getBoundingClientRect();
-      const x = e.clientX - rect.left - rect.width / 2;
-      const y = e.clientY - rect.top - rect.height / 2;
+      const x = (e as MouseEvent).clientX - rect.left - rect.width / 2;
+      const y = (e as MouseEvent).clientY - rect.top - rect.height / 2;
 
       btn.style.transform = `translate(${x * 0.2}px, ${y * 0.2}px)`;
     });
@@ -175,7 +175,7 @@ export function initLazyLoading() {
 }
 
 export function initAllAnimations() {
-  const cleanup: (() => void)[] = [];
+  const cleanup: (void | (() => void) | undefined)[] = [];
 
   cleanup.push(initScrollAnimations());
   cleanup.push(initSmoothScroll());

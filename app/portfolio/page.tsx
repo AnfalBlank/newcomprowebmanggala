@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { fetchProjects } from "@/lib/api-client";
+import { needsUnoptimized, parseGallery } from "@/lib/image";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";
-import { Calendar, Briefcase, ChevronRight, FolderOpen, MapPin, Calendar as CalendarIcon } from "lucide-react";
+import { Calendar, Briefcase, ChevronRight, FolderOpen, MapPin, Calendar as CalendarIcon, Images } from "lucide-react";
 import { useTranslation } from "@/context/LanguageContext";
 import { TechHero } from "@/components/ui/tech-hero";
 
@@ -83,6 +84,8 @@ export default function PortfolioPage() {
                         src={project.imageUrl}
                         alt={project.title}
                         fill
+                        unoptimized={needsUnoptimized(project.imageUrl)}
+                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         className="object-cover group-hover:scale-110 transition-transform duration-700"
                       />
                     ) : (
@@ -90,10 +93,16 @@ export default function PortfolioPage() {
                         <Briefcase className="w-16 h-16 opacity-20" />
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex items-end p-6">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex items-end justify-between gap-3 p-6">
                       <Badge className="bg-primary/90 backdrop-blur-sm text-white hover:bg-primary transition-colors">
                         {project.category}
                       </Badge>
+                      {parseGallery(project.gallery).length > 0 && (
+                        <span className="flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
+                          <Images className="h-3.5 w-3.5" />
+                          {parseGallery(project.gallery).length} foto dokumentasi
+                        </span>
+                      )}
                     </div>
                   </div>
                   <CardHeader className="pb-4">

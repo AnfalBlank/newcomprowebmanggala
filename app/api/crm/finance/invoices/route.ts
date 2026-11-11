@@ -6,7 +6,7 @@ import { eq, desc } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!session?.user || session.user.role !== "admin") return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     const invoices = await db.query.crmInvoices.findMany({

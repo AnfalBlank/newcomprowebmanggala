@@ -28,7 +28,7 @@ export async function POST(
 ) {
   try {
     const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session?.user || session.user.role !== "admin") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id } = await params;
     const body = await request.json();

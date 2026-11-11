@@ -3,6 +3,7 @@ import { Sora, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { HideOnAdmin } from "@/components/layout/hide-on-admin";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { Toaster } from "@/components/ui/sonner";
 import { LanguageProvider } from "@/context/LanguageContext";
@@ -133,12 +134,14 @@ export default function RootLayout({
           <CustomCursor />
           <AnimationProvider />
           <SmoothScroll />
-          <Header />
+          <HideOnAdmin><Header /></HideOnAdmin>
           <main className="flex-1">
             {children}
           </main>
-          <Footer />
-          <WhatsAppButton />
+          <HideOnAdmin>
+            <Footer />
+            <WhatsAppButton />
+          </HideOnAdmin>
           <Toaster position="top-center" richColors />
         </LanguageProvider>
       </body>
